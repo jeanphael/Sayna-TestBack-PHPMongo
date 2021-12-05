@@ -1,0 +1,30 @@
+.menu{
+    background-color: #63C7B2 !important;
+}
+a{
+    color: #ffffff  !important;
+}
+
+
+@font-face {
+    font-family: "Gilroy BoldItalic";
+    
+    src: url("/assets/css/Gilroy-Black.woff") format("woff"),
+  }
+  
+  body {
+    font-family: "Gilroy BoldItalic";
+    font-size: medium;
+  } 
+ 
+  img {
+    width: 50px !important; 
+    
+  }
+  #addPhotoContainer {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 5px;
+    width: 150px !important; 
+  }
+  

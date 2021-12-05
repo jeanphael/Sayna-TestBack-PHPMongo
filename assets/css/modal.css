@@ -1,0 +1,21 @@
+.modal-body label{
+	width:30%;
+} 
+
+.modal-body input{
+	width:50%;
+} 
+
+.container_check_box { 
+	border:2px;
+	height: 80px; overflow-y: scroll; 
+	padding-left:10px;
+
+}
+.ajoutlieu{
+	 background-color:#4ECDC4;
+	 color:#ffffff;
+}
+.modal-header{
+	background-color:#ffffff !important;
+}
