@@ -177,30 +177,17 @@ class Home extends BaseController
 			return;
 		}
 		$arrayParams = $this->request->getRawInput();
+		$cart = $arrayParams['cartNumber'];
+		$month = $arrayParams['month'];
+		$year = $arrayParams['year'];
+		$default = $arrayParams['default'];
 		$listParam = array_keys($arrayParams)[0];
-		$arrayParameter = explode(',',$listParam);
-		foreach($arrayParameter as $c)
-		{
-			if(str_contains($c,'cartNumber'))
-			{ 
-				$cart =  substr($c, strpos($c, ":")+1) ;
-				str_replace('"', "", $cart);
-			}
-			if(str_contains($c,'month')){
-				$month = substr($c, strpos($c, ":")+1) ;
-				str_replace('"', "", $month);
-			}
-			if(str_contains($c,'year'))
-			{
-				$year =substr($c, strpos($c, ":")+1) ;
-				str_replace('"', "", $year);
-			}
-			if(str_contains($c,'default'))
-			{
-				$default = substr($c, strpos($c, ":")+1) ;
-				str_replace('"', "", $default);
-			}
+		$arrayVal = explode(':',$listParam);
+		foreach($arrayVal as $chaine){
+			array_push($arrayRes,strtok($chaine, ','));
 		}
+		print_r($arrayVal);
+		return;
 		if(!isset($cart) || trim($cart) === '')
 		{
 			$this->returnError(409,'une ou plusieurs données sont erronées');
@@ -229,18 +216,6 @@ class Home extends BaseController
 		
 		try
 			{	
-				$tokenHeader = $this->getHeaderToken();
-				if($tokenHeader == null)
-				{
-					$this->returnError(401,'Votre token n\est pas correct');
-					return;
-				}
-				$user = $client->saynadb->user->findOne($tokenQuery);
-				if($user == null)
-				{
-					$this->returnError(401,'Votre token n\est pas correct');
-					return;
-				}
 				$cardQuery = array('cartNumber' => $cart);
 				$cardByCode = $client->saynadb->card->findOne($cardQuery);
 				if($cardByCode != null)

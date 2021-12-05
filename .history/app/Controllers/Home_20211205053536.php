@@ -185,20 +185,28 @@ class Home extends BaseController
 			{ 
 				$cart =  substr($c, strpos($c, ":")+1) ;
 				str_replace('"', "", $cart);
+				str_replace('}', "", $cart);
+				str_replace(',', "", $cart);
 			}
 			if(str_contains($c,'month')){
 				$month = substr($c, strpos($c, ":")+1) ;
 				str_replace('"', "", $month);
+				str_replace('}', "", $month);
+				str_replace(',', "", $month);
 			}
 			if(str_contains($c,'year'))
 			{
 				$year =substr($c, strpos($c, ":")+1) ;
 				str_replace('"', "", $year);
+				str_replace('}', "", $year);
+				str_replace(',', "", $year);
 			}
 			if(str_contains($c,'default'))
 			{
 				$default = substr($c, strpos($c, ":")+1) ;
 				str_replace('"', "", $default);
+				str_replace('}', "", $default);
+				str_replace(',', "", $default);
 			}
 		}
 		if(!isset($cart) || trim($cart) === '')

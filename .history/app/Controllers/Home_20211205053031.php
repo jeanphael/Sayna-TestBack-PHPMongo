@@ -181,25 +181,10 @@ class Home extends BaseController
 		$arrayParameter = explode(',',$listParam);
 		foreach($arrayParameter as $c)
 		{
-			if(str_contains($c,'cartNumber'))
-			{ 
-				$cart =  substr($c, strpos($c, ":")+1) ;
-				str_replace('"', "", $cart);
-			}
-			if(str_contains($c,'month')){
-				$month = substr($c, strpos($c, ":")+1) ;
-				str_replace('"', "", $month);
-			}
-			if(str_contains($c,'year'))
-			{
-				$year =substr($c, strpos($c, ":")+1) ;
-				str_replace('"', "", $year);
-			}
-			if(str_contains($c,'default'))
-			{
-				$default = substr($c, strpos($c, ":")+1) ;
-				str_replace('"', "", $default);
-			}
+			if(str_contains($c,'cartNumber')) $cart =  substr($c, strpos($c, ":")+1) ;
+			if(str_contains($c,'month'))$month = substr($c, strpos($c, ":")+1) ;
+			if(str_contains($c,'year'))$year =substr($c, strpos($c, ":")+1) ;
+			if(str_contains($c,'default'))$default = substr($c, strpos($c, ":")+1) ;
 		}
 		if(!isset($cart) || trim($cart) === '')
 		{
