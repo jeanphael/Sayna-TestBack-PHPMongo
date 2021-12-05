@@ -176,12 +176,12 @@ class Home extends BaseController
 			$this->returnError(403,'Vos droits d\accés ne permettent pas d\acceder à la ressource');
 			return;
 		}
-		$arrayParams = $this->request->getRawInput();
-		$cart = $arrayParams['cartNumber'];
-		$month = $arrayParams['month'];
-		$year = $arrayParams['year'];
-		$default = $arrayParams['default'];
-		var_dump($arrayParams); return;
+		
+		$cart = $this->request->getVar('cartNumber');
+		$month = $this->request->getVar('month');
+		$year = $this->request->getVar('year');
+		$default = $this->request->getVar('default');
+		//var_dump($this->request->getRawInput()); return;
 		if(!isset($cart) || trim($cart) === '')
 		{
 			$this->returnError(409,'une ou plusieurs données sont erronées');
@@ -244,7 +244,6 @@ class Home extends BaseController
 			}
 			$client = $this->getConnection();
 			$tokenQuery = array('token' => $tokenHeader);
-			//var_dump($tokenHeader);
 			$user = $client->saynadb->user->findOne($tokenQuery);
 			if($user == null)
 			{
@@ -299,16 +298,7 @@ class Home extends BaseController
 	public function getSongById($id)
 	{
 		$tokenHeader = $this->getHeaderToken();
-		
-		if(!isset($id) || trim($id) === '')
-		{
-			$this->returnError(400,'id song manquant');
-			return;
-		}
-		//song byId
-		$client = $this->getConnection();
-		try{
-			if($tokenHeader == null)
+		if($tokenHeader == null)
 			{
 				$this->returnError(401,'Votre token n\est pas correct');
 				return;
@@ -321,6 +311,14 @@ class Home extends BaseController
 				$this->returnError(401,'Votre token n\est pas correct');
 				return;
 			}
+		if(!isset($id) || trim($id) === '')
+		{
+			$this->returnError(400,'id song manquant');
+			return;
+		}
+		//song byId
+		$client = $this->getConnection();
+		try{
 			$getSongByIdQuery = array('_id' => new \MongoDB\BSON\ObjectID($id));
 			$songByID = $client->saynadb->songs->findOne($getSongByIdQuery);
 			if($songByID != null)
@@ -346,19 +344,7 @@ class Home extends BaseController
 
 	public function getBills()
 	{
-		if($tokenHeader == null)
-			{
-				$this->returnError(403,'Vos token n\est permettent pas d\'acceder à la ressource');
-				return;
-			}
-			$client = $this->getConnection();
-			$tokenQuery = array('token' => $tokenHeader);
-			$user = $client->saynadb->user->findOne($tokenQuery);
-			if($user == null)
-			{
-				$this->returnError(403,'Vos token n\est permettent pas d\'acceder à la ressource');
-				return;
-			}
+		$client = $this->getConnection();
 		$collection = $client->saynadb->bills;
 		$result = $collection->findOne();
 		$this->response->setStatusCode(200);

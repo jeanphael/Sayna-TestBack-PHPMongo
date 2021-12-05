@@ -181,7 +181,7 @@ class Home extends BaseController
 		$month = $arrayParams['month'];
 		$year = $arrayParams['year'];
 		$default = $arrayParams['default'];
-		var_dump($arrayParams); return;
+		var_dump(cartNumber; return;
 		if(!isset($cart) || trim($cart) === '')
 		{
 			$this->returnError(409,'une ou plusieurs données sont erronées');
@@ -244,7 +244,6 @@ class Home extends BaseController
 			}
 			$client = $this->getConnection();
 			$tokenQuery = array('token' => $tokenHeader);
-			//var_dump($tokenHeader);
 			$user = $client->saynadb->user->findOne($tokenQuery);
 			if($user == null)
 			{

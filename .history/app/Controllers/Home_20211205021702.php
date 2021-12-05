@@ -244,7 +244,6 @@ class Home extends BaseController
 			}
 			$client = $this->getConnection();
 			$tokenQuery = array('token' => $tokenHeader);
-			//var_dump($tokenHeader);
 			$user = $client->saynadb->user->findOne($tokenQuery);
 			if($user == null)
 			{

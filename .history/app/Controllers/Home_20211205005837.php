@@ -167,21 +167,11 @@ class Home extends BaseController
 			$this->returnError(403,'Vos droits d\accés ne permettent pas d\acceder à la ressource');
 			return;
 		}
-		$client = $this->getConnection();
-		$tokenQuery = array('token' => $tokenHeader);
-		
-		$user = $client->saynadb->user->findOne($tokenQuery);
-		if($user == null)
-		{
-			$this->returnError(403,'Vos droits d\accés ne permettent pas d\acceder à la ressource');
-			return;
-		}
-		$arrayParams = $this->request->getRawInput();
-		$cart = $arrayParams['cartNumber'];
-		$month = $arrayParams['month'];
-		$year = $arrayParams['year'];
-		$default = $arrayParams['default'];
-		var_dump($arrayParams); return;
+		$cart = $this->request->getVar('cart');
+		$month = $this->request->getVar('month');
+		$year = $this->request->getVar('year');
+		$default = $this->request->getVar('default');
+		//var_dump($this->request->getRawInput()); return;
 		if(!isset($cart) || trim($cart) === '')
 		{
 			$this->returnError(409,'une ou plusieurs données sont erronées');
@@ -207,18 +197,21 @@ class Home extends BaseController
 			$this->returnError(402,'informations bancaire incorrectes');
 			return;
 		}
-		
 		try
-			{	
-				$cardQuery = array('cartNumber' => $cart);
-				$cardByCode = $client->saynadb->card->findOne($cardQuery);
-				if($cardByCode != null)
+			{
+				
+				$client = $this->getConnection();
+				$getByIdQuery = array('_id' => $idUser);
+				$cartById = (object)$client->saynadb->card->findOne($getByIdQuery);
+			
+				if($cartById != null)
 				{
-					$this->returnError(409,'La carte existe déjà ');
-					return;
-				}
-				$inserted = $client->saynadb->card->insertOne(['emailUser'=> ((object)$user)->email, 'cartNumber' => $cart , 'month' => $month , 'year' => $year , 'default' => $default ]
+					$this->returnError(409,'La carte existe déjà');
+					return; 
+				}else{
+					$inserted = $client->saynadb->card->insertOne(['idUser'=> $idUser, 'cartNumber' => $cart , 'month' => $month , 'year' => $year , 'default' => $default ]
 					);
+				}
 				$this->response->setStatusCode(200);
 				$arr = array('error' => false,'message' =>'Vos données ont été mises à jour');
 				header('Content-Type:application/json');
@@ -234,26 +227,17 @@ class Home extends BaseController
 
 	public function deleteUser()
 	{
+
+		//delete
+		//getTokenAuthorization 
+		//getUserByToken
 		try
 		{
-			$tokenHeader = $this->getHeaderToken();
-			if($tokenHeader == null)
-			{
-				$this->returnError(401,'Votre token n\est pas correct');
-				return;
-			}
 			$client = $this->getConnection();
-			$tokenQuery = array('token' => $tokenHeader);
-			//var_dump($tokenHeader);
-			$user = $client->saynadb->user->findOne($tokenQuery);
-			if($user == null)
-			{
-				$this->returnError(401,'Votre token n\est pas correct');
-				return;
-			}
 			$collection = $client->saynadb->user;
+			$getByIdQuery = array('nom' =>'rakoto');
 			//$collection->deleteOne([['_id' =>new \MongoDB\BSON\ObjectID('61ab2c68da190000110047e7')], ['limit' => 1]]);
-			$collection->deleteOne($tokenQuery);
+			$collection->deleteOne($getByIdQuery);
 			$this->response->setStatusCode(200);
 			$arr = array('error' => false,'message' =>'Votre compte été supprimé avec succès');
 			header('Content-Type:application/json');
@@ -270,21 +254,26 @@ class Home extends BaseController
 
 	public function listSongs()
 	{
-		$tokenHeader = $this->getHeaderToken();
-			if($tokenHeader == null)
-			{
-				$this->returnError(401,'Votre token n\est pas correct');
-				return;
-			}
-			$client = $this->getConnection();
-			$tokenQuery = array('token' => $tokenHeader);
-			$user = $client->saynadb->user->findOne($tokenQuery);
-			if($user == null)
-			{
-				$this->returnError(401,'Votre token n\est pas correct');
-				return;
-			}
+
+		$key = getenv('JWT_SECRET');
 		
+        $header = $this->request->getHeader("Authorization");
+        $token = null;
+ 
+        // extract the token from the header
+        if(!empty($header)) {
+            if (preg_match('/Bearer\s(\S+)/', $header, $matches)) {
+                $token = $matches[1];
+            }
+        }
+
+		$this->response->setStatusCode(401);
+ 
+        // check if token is null or empty
+        var_dump($token); return;
+
+		
+		$client = $this->getConnection();
 		//listSongs
 		$collection = $client->saynadb->songs;
 		$result = $collection->find()->toArray();
@@ -298,8 +287,6 @@ class Home extends BaseController
 
 	public function getSongById($id)
 	{
-		$tokenHeader = $this->getHeaderToken();
-		
 		if(!isset($id) || trim($id) === '')
 		{
 			$this->returnError(400,'id song manquant');
@@ -308,19 +295,6 @@ class Home extends BaseController
 		//song byId
 		$client = $this->getConnection();
 		try{
-			if($tokenHeader == null)
-			{
-				$this->returnError(401,'Votre token n\est pas correct');
-				return;
-			}
-			$client = $this->getConnection();
-			$tokenQuery = array('token' => $tokenHeader);
-			$user = $client->saynadb->user->findOne($tokenQuery);
-			if($user == null)
-			{
-				$this->returnError(401,'Votre token n\est pas correct');
-				return;
-			}
 			$getSongByIdQuery = array('_id' => new \MongoDB\BSON\ObjectID($id));
 			$songByID = $client->saynadb->songs->findOne($getSongByIdQuery);
 			if($songByID != null)
@@ -346,19 +320,7 @@ class Home extends BaseController
 
 	public function getBills()
 	{
-		if($tokenHeader == null)
-			{
-				$this->returnError(403,'Vos token n\est permettent pas d\'acceder à la ressource');
-				return;
-			}
-			$client = $this->getConnection();
-			$tokenQuery = array('token' => $tokenHeader);
-			$user = $client->saynadb->user->findOne($tokenQuery);
-			if($user == null)
-			{
-				$this->returnError(403,'Vos token n\est permettent pas d\'acceder à la ressource');
-				return;
-			}
+		$client = $this->getConnection();
 		$collection = $client->saynadb->bills;
 		$result = $collection->findOne();
 		$this->response->setStatusCode(200);

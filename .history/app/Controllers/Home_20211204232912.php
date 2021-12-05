@@ -7,11 +7,6 @@ class Home extends BaseController
 {
 	public function index()
 	{
-		echo view('home');
-	}
-
-	public function generateToken($emailUser)
-	{
 		$key = getenv('JWT_SECRET');
         $iat = time(); // current timestamp value
         $exp = $iat + 3600;
@@ -22,11 +17,12 @@ class Home extends BaseController
             "sub" => "Subject of the JWT",
             "iat" => $iat, //Time the JWT issued at
             "exp" => $exp, // Expiration time of token
-            "email" => $emailUser,
+            "email" => $user['email'],
         );
          
         $token = JWT::encode($payload, $key);
-		return $token;
+		var_dump($token);
+		echo view('home');
 	}
 	public function getConnection()
 	{
@@ -64,12 +60,7 @@ class Home extends BaseController
 			foreach ($userByLogin as $row)  {
 				$mdps = $row->password;
 				if(password_verify($password, $mdps)) {
-					$token = $this->generateToken($email);
-					//updateToken 
-					$db->user->updateOne($loginQuery,[ '$set' => [ 'token' => $token,'updateAT'=>time()]]);
-					$userUpdated = $db->user->findOne($loginQuery);
-					$this->response->setStatusCode(200);
-					$arr = array('error' => false,'message' =>'L\'utilisateur a été authentifié succès','user'=> (object)$userUpdated);
+					$arr = array('status' => 200,'error' => false,'message' =>'L\'utilisateur a été authentifié succès','user'=> (object)$row);
 					header('Content-Type:application/json');
 					echo json_encode($arr);	
 					return;
@@ -88,8 +79,7 @@ class Home extends BaseController
 	}
 	public function returnError($statusCode,$errorMsg)
 	{
-		$this->response->setStatusCode($statusCode);
-		$arr = array('error' => true,'message' =>$errorMsg);
+		$arr = array('status' => $statusCode,'error' => true,'message' =>$errorMsg);
 		header('Content-Type:application/json');
 		echo json_encode($arr);	
 	}
@@ -144,13 +134,12 @@ class Home extends BaseController
 		}
   		$collection = $db->user;
 		$pwdCrypt = password_hash($password, PASSWORD_BCRYPT);
-		$insertOneResult = $collection->insertOne(['token'=>'','firstname'=>$firstname,'lastname'=>$lastname,'email'=>$email,'password'=>$pwdCrypt,'date_naissance'=>$date_naissance,'sexe'=>$sexe,'createdAt'=>time(),'updateAT'=>time(),'subscription'=>'0']);
+		$insertOneResult = $collection->insertOne(['firstname'=>$firstname,'lastname'=>$lastname,'email'=>$email,'password'=>$pwdCrypt,'token'=>$pwdCrypt,'date_naissance'=>$date_naissance,'sexe'=>$sexe]);
 		if($insertOneResult->getInsertedId() != '0')
 		{
 			$getByIdQuery = array('_id' => $insertOneResult->getInsertedId());
 			$userById = $db->user->findOne($getByIdQuery);
-			$this->response->setStatusCode(201);
-			$arr = array('error' => false,'message' =>'L\'utilisateur a bien été créé avec succès','user'=> (object)$userById);
+			$arr = array('status' => 200,'error' => false,'message' =>'L\'utilisateur a bien été créé avec succès','user'=> (object)$userById);
 			header('Content-Type:application/json');
 			echo json_encode($arr);	
 			return;
@@ -161,27 +150,12 @@ class Home extends BaseController
 
 	public function addCart()
 	{
-		$tokenHeader = $this->getHeaderToken();
-		if($tokenHeader == null)
-		{
-			$this->returnError(403,'Vos droits d\accés ne permettent pas d\acceder à la ressource');
-			return;
-		}
-		$client = $this->getConnection();
-		$tokenQuery = array('token' => $tokenHeader);
-		
-		$user = $client->saynadb->user->findOne($tokenQuery);
-		if($user == null)
-		{
-			$this->returnError(403,'Vos droits d\accés ne permettent pas d\acceder à la ressource');
-			return;
-		}
-		$arrayParams = $this->request->getRawInput();
-		$cart = $arrayParams['cartNumber'];
-		$month = $arrayParams['month'];
-		$year = $arrayParams['year'];
-		$default = $arrayParams['default'];
-		var_dump($arrayParams); return;
+		$cart = $this->request->getVar('cart');
+		$month = $this->request->getVar('month');
+		$year = $this->request->getVar('year');
+		$default = $this->request->getVar('default');
+		$idUser = $this->request->getVar('idUser');
+		//var_dump($this->request->getRawInput()); return;
 		if(!isset($cart) || trim($cart) === '')
 		{
 			$this->returnError(409,'une ou plusieurs données sont erronées');
@@ -207,20 +181,22 @@ class Home extends BaseController
 			$this->returnError(402,'informations bancaire incorrectes');
 			return;
 		}
-		
 		try
-			{	
-				$cardQuery = array('cartNumber' => $cart);
-				$cardByCode = $client->saynadb->card->findOne($cardQuery);
-				if($cardByCode != null)
+			{
+				
+				$client = $this->getConnection();
+				$getByIdQuery = array('_id' => $idUser);
+				$cartById = (object)$client->saynadb->card->findOne($getByIdQuery);
+			
+				if($cartById != null)
 				{
-					$this->returnError(409,'La carte existe déjà ');
-					return;
-				}
-				$inserted = $client->saynadb->card->insertOne(['emailUser'=> ((object)$user)->email, 'cartNumber' => $cart , 'month' => $month , 'year' => $year , 'default' => $default ]
+					$this->returnError(409,'La carte existe déjà');
+					return; 
+				}else{
+					$inserted = $client->saynadb->card->insertOne(['idUser'=> $idUser, 'cartNumber' => $cart , 'month' => $month , 'year' => $year , 'default' => $default ]
 					);
-				$this->response->setStatusCode(200);
-				$arr = array('error' => false,'message' =>'Vos données ont été mises à jour');
+				}
+				$arr = array('status' => 200,'error' => false,'message' =>'Vos données ont été mises à jour');
 				header('Content-Type:application/json');
 				echo json_encode($arr);	
 				
@@ -234,28 +210,18 @@ class Home extends BaseController
 
 	public function deleteUser()
 	{
+
+		//delete
+		//getTokenAuthorization 
+		//getUserByToken
 		try
 		{
-			$tokenHeader = $this->getHeaderToken();
-			if($tokenHeader == null)
-			{
-				$this->returnError(401,'Votre token n\est pas correct');
-				return;
-			}
 			$client = $this->getConnection();
-			$tokenQuery = array('token' => $tokenHeader);
-			//var_dump($tokenHeader);
-			$user = $client->saynadb->user->findOne($tokenQuery);
-			if($user == null)
-			{
-				$this->returnError(401,'Votre token n\est pas correct');
-				return;
-			}
 			$collection = $client->saynadb->user;
+			$getByIdQuery = array('nom' =>'rakoto');
 			//$collection->deleteOne([['_id' =>new \MongoDB\BSON\ObjectID('61ab2c68da190000110047e7')], ['limit' => 1]]);
-			$collection->deleteOne($tokenQuery);
-			$this->response->setStatusCode(200);
-			$arr = array('error' => false,'message' =>'Votre compte été supprimé avec succès');
+			$collection->deleteOne($getByIdQuery);
+			$arr = array('status' => 200,'error' => false,'message' =>'Votre compte été supprimé avec succès');
 			header('Content-Type:application/json');
 			echo json_encode($arr);	
 			return;
@@ -270,26 +236,30 @@ class Home extends BaseController
 
 	public function listSongs()
 	{
-		$tokenHeader = $this->getHeaderToken();
-			if($tokenHeader == null)
-			{
-				$this->returnError(401,'Votre token n\est pas correct');
-				return;
-			}
-			$client = $this->getConnection();
-			$tokenQuery = array('token' => $tokenHeader);
-			$user = $client->saynadb->user->findOne($tokenQuery);
-			if($user == null)
-			{
-				$this->returnError(401,'Votre token n\est pas correct');
-				return;
-			}
+
+		$key = getenv('JWT_SECRET');
 		
+        $header = $this->request->getHeader("Authorization");
+        $token = null;
+ 
+        // extract the token from the header
+        if(!empty($header)) {
+            if (preg_match('/Bearer\s(\S+)/', $header, $matches)) {
+                $token = $matches[1];
+            }
+        }
+
+		$response->setStatusCode(401);
+ 
+        // check if token is null or empty
+        var_dump($token); return;
+
+		
+		$client = $this->getConnection();
 		//listSongs
 		$collection = $client->saynadb->songs;
 		$result = $collection->find()->toArray();
-		$this->response->setStatusCode(200);
-		$arr = array('error' => false,'songs'=> $result);
+		$arr = array('status' => 200,'error' => false,'songs'=> $result);
 		header('Content-Type:application/json');
 		echo json_encode($arr);	
 		return;
@@ -298,8 +268,6 @@ class Home extends BaseController
 
 	public function getSongById($id)
 	{
-		$tokenHeader = $this->getHeaderToken();
-		
 		if(!isset($id) || trim($id) === '')
 		{
 			$this->returnError(400,'id song manquant');
@@ -308,25 +276,11 @@ class Home extends BaseController
 		//song byId
 		$client = $this->getConnection();
 		try{
-			if($tokenHeader == null)
-			{
-				$this->returnError(401,'Votre token n\est pas correct');
-				return;
-			}
-			$client = $this->getConnection();
-			$tokenQuery = array('token' => $tokenHeader);
-			$user = $client->saynadb->user->findOne($tokenQuery);
-			if($user == null)
-			{
-				$this->returnError(401,'Votre token n\est pas correct');
-				return;
-			}
 			$getSongByIdQuery = array('_id' => new \MongoDB\BSON\ObjectID($id));
 			$songByID = $client->saynadb->songs->findOne($getSongByIdQuery);
 			if($songByID != null)
 			{
-				$this->response->setStatusCode(200);
-				$arr = array('error' => false,'song'=> (object)$songByID);
+				$arr = array('status' => 200,'error' => false,'song'=> (object)$songByID);
 				header('Content-Type:application/json');
 				echo json_encode($arr);	
 				return;	
@@ -346,23 +300,10 @@ class Home extends BaseController
 
 	public function getBills()
 	{
-		if($tokenHeader == null)
-			{
-				$this->returnError(403,'Vos token n\est permettent pas d\'acceder à la ressource');
-				return;
-			}
-			$client = $this->getConnection();
-			$tokenQuery = array('token' => $tokenHeader);
-			$user = $client->saynadb->user->findOne($tokenQuery);
-			if($user == null)
-			{
-				$this->returnError(403,'Vos token n\est permettent pas d\'acceder à la ressource');
-				return;
-			}
+		$client = $this->getConnection();
 		$collection = $client->saynadb->bills;
 		$result = $collection->findOne();
-		$this->response->setStatusCode(200);
-		$arr = array('error' => false,'bill'=> $result);
+		$arr = array('status' => 200,'error' => false,'bill'=> $result);
 		header('Content-Type:application/json');
 		echo json_encode($arr);	
 		return;
@@ -377,18 +318,5 @@ class Home extends BaseController
 		//find 
 		$result = $collection->find()->toArray();
 		echo json_encode($result);
-	}
-	public function getHeaderToken()
-	{
-		$header = $this->request->getHeader("Authorization");
-        $token = null;
- 
-        // extract the token from the header
-        if(!empty($header)) {
-            if (preg_match('/Bearer\s(\S+)/', $header, $matches)) {
-                $token = $matches[1];
-            }
-        }
-		return $token;
 	}
 }

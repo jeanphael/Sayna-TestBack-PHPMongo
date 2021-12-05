@@ -37,7 +37,7 @@ $routes->post('/login','Home::login');
 $routes->post('/register','Home::register');
 $routes->put('/user/cart','Home::addCart');
 $routes->delete('/user','Home::deleteUser');
-$routes->get('/songs','Home::listSongs');
+$routes->post('/songs','Home::listSongs');
 $routes->get('/songs/(:any)','Home::getSongById/$1');
 $routes->get('/bills','Home::getBills');
 
